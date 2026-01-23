@@ -17,8 +17,11 @@ venv/
 ENV/
 env/
 
-# Bash
+# Logs and captures
 *.log
+*.har
+*.pcap
+*.pcapng
 
 # OS files
 .DS_Store
