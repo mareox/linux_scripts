@@ -2,7 +2,7 @@
 
 Collection of system administration and automation scripts for Linux servers.
 
-**📋 Infrastructure Reference:** See `/homelab-infrastructure/INFRASTRUCTURE.md` for:
+**📋 Infrastructure Reference:** See `/homelab-infra/INFRASTRUCTURE.md` for:
 - All Linux servers in the homelab (Proxmox hosts, LXC containers, VMs)
 - Server IP addresses and hostnames
 - SSH access configuration
