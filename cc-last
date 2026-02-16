@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""
+cc-last - Show recent Claude Code sessions across all projects
+
+Usage:
+  cc-last           # Show last 10 sessions
+  cc-last -n 5      # Show last 5 sessions
+  cc-last -1        # Output only the resume command for most recent session
+"""
+
+import json
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# ANSI color codes
+GRAY = '\033[90m'
+BOLD = '\033[1m'
+CYAN = '\033[96m'
+RESET = '\033[0m'
+
+
+def parse_project_path(project_dir_name):
+    """Convert project directory name to actual path."""
+    if project_dir_name == '-home-mareox-GIT':
+        return '~/GIT'
+    elif project_dir_name.startswith('-home-mareox-GIT-'):
+        # Remove prefix and convert dashes to slashes
+        subpath = project_dir_name.replace('-home-mareox-GIT-', '', 1)
+        subpath = subpath.replace('-', '/')
+        return f'~/GIT/{subpath}'
+    else:
+        # Unknown pattern, return as-is
+        return f'~/.claude/projects/{project_dir_name}'
+
+
+def get_first_user_message(jsonl_file):
+    """Extract the first real user message from a session JSONL file."""
+    try:
+        with open(jsonl_file, 'r') as f:
+            for line in f:
+                try:
+                    data = json.loads(line.strip())
+                    if data.get('type') == 'user':
+                        message = data.get('message', {})
+                        content = message.get('content', '')
+
+                        # Handle both string and list content
+                        if isinstance(content, list):
+                            # Extract text from list of content blocks
+                            text_parts = [
+                                block.get('text', '')
+                                for block in content
+                                if isinstance(block, dict) and block.get('type') == 'text'
+                            ]
+                            content = ' '.join(text_parts).strip()
+
+                        # Skip system messages (start with <)
+                        if content and not content.startswith('<'):
+                            # Truncate to 80 chars
+                            if len(content) > 80:
+                                content = content[:77] + '...'
+                            return content
+                except json.JSONDecodeError:
+                    continue
+        return "No user message found"
+    except Exception as e:
+        return f"Error reading file: {e}"
+
+
+def format_size(size_bytes):
+    """Format file size in human-readable format."""
+    if size_bytes < 1024:
+        return f"{size_bytes}B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes/1024:.1f}KB"
+    else:
+        return f"{size_bytes/(1024*1024):.1f}MB"
+
+
+def main():
+    # Parse arguments
+    limit = 10
+    quick_mode = False
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == '-1':
+            quick_mode = True
+            limit = 1
+        elif sys.argv[1] == '-n' and len(sys.argv) > 2:
+            try:
+                limit = int(sys.argv[2])
+            except ValueError:
+                print("Error: -n requires a number", file=sys.stderr)
+                sys.exit(1)
+        else:
+            print(__doc__)
+            sys.exit(1)
+
+    # Find all session JSONL files
+    projects_dir = Path.home() / '.claude' / 'projects'
+
+    if not projects_dir.exists():
+        print("No Claude Code projects directory found", file=sys.stderr)
+        sys.exit(1)
+
+    sessions = []
+
+    # Scan for GIT project sessions
+    for project_dir in projects_dir.glob('-home-mareox-GIT*'):
+        if not project_dir.is_dir():
+            continue
+
+        # Find .jsonl files in project directory (not subagents)
+        for jsonl_file in project_dir.glob('*.jsonl'):
+            stat = jsonl_file.stat()
+            sessions.append({
+                'file': jsonl_file,
+                'mtime': stat.st_mtime,
+                'size': stat.st_size,
+                'project_dir': project_dir.name,
+                'session_id': jsonl_file.stem
+            })
+
+    # Sort by modification time (most recent first)
+    sessions.sort(key=lambda x: x['mtime'], reverse=True)
+
+    # Limit results
+    sessions = sessions[:limit]
+
+    if not sessions:
+        print("No sessions found", file=sys.stderr)
+        sys.exit(1)
+
+    # Quick mode: just output the resume command
+    if quick_mode:
+        s = sessions[0]
+        project_path = parse_project_path(s['project_dir'])
+        print(f"cd {project_path} && claude --resume {s['session_id']}")
+        return
+
+    # Normal mode: show details
+    for s in sessions:
+        timestamp = datetime.fromtimestamp(s['mtime']).strftime('%Y-%m-%d %H:%M:%S')
+        project_path = parse_project_path(s['project_dir'])
+        description = get_first_user_message(s['file'])
+        size = format_size(s['size'])
+        resume_cmd = f"cd {project_path} && claude --resume {s['session_id']}"
+
+        print(f"{GRAY}{timestamp}{RESET} {GRAY}[{size}]{RESET} {BOLD}{project_path}{RESET}")
+        print(f"  {description}")
+        print(f"  {CYAN}{resume_cmd}{RESET}")
+        print()
+
+
+if __name__ == '__main__':
+    main()

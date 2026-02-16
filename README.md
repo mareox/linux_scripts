@@ -21,7 +21,20 @@ ssh -i ~/.ssh/mareox-auth mareox@<server-ip>
 
 ## Scripts
 
-System update scripts, server utilities, and automation tools for Linux server management.
+### System Administration
+- `sudo_update.sh` - System updates with sudo
+- `nosudo-update.sh` - System updates without sudo
+
+### Claude Code Utilities
+- `cc-last` - Show recent Claude Code sessions across all projects under ~/GIT
+  - `cc-last` - Show last 10 sessions
+  - `cc-last -n 5` - Show last 5 sessions
+  - `cc-last -1` - Output only resume command for most recent (use with `eval $(cc-last -1)`)
+
+**Add to PATH:** To use `cc-last` from anywhere, add to `~/.zshrc`:
+```bash
+export PATH="$HOME/GIT/linux_scripts:$PATH"
+```
 
 ## Usage
 
