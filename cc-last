@@ -22,16 +22,36 @@ RESET = '\033[0m'
 
 
 def parse_project_path(project_dir_name):
-    """Convert project directory name to actual path."""
+    """Convert project directory name to actual path.
+
+    Claude Code encodes paths by replacing '/' with '-', but folder names
+    can also contain dashes (e.g., 'work-second-brain'). We resolve the
+    ambiguity by checking which path segments actually exist on disk.
+    """
     if project_dir_name == '-home-mareox-GIT':
         return '~/GIT'
     elif project_dir_name.startswith('-home-mareox-GIT-'):
-        # Remove prefix and convert dashes to slashes
         subpath = project_dir_name.replace('-home-mareox-GIT-', '', 1)
-        subpath = subpath.replace('-', '/')
-        return f'~/GIT/{subpath}'
+        # Greedily resolve path segments against actual directories
+        git_dir = Path.home() / 'GIT'
+        parts = subpath.split('-')
+        resolved = []
+        i = 0
+        while i < len(parts):
+            # Try increasingly longer dash-joined segments
+            for j in range(len(parts), i, -1):
+                candidate = '-'.join(parts[i:j])
+                check_path = git_dir / '/'.join(resolved + [candidate])
+                if check_path.exists():
+                    resolved.append(candidate)
+                    i = j
+                    break
+            else:
+                # No match found — use single part as-is
+                resolved.append(parts[i])
+                i += 1
+        return f"~/GIT/{'/'.join(resolved)}"
     else:
-        # Unknown pattern, return as-is
         return f'~/.claude/projects/{project_dir_name}'
 
 
