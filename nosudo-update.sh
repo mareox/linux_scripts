@@ -1,5 +1,9 @@
-apt update -y &&  apt upgrade -y 
+#!/bin/bash
+set -euo pipefail
 
-apt upgrade -y &&  apt update -y &&  apt autoremove --purge -y
+# System update script (run as root or via sudo bash)
+# Usage: bash nosudo-update.sh
 
-apt dist-upgrade -y &&  apt update -y &&  apt autoremove --purge -y
+apt update
+apt dist-upgrade -y
+apt autoremove --purge -y
