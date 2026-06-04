@@ -12,7 +12,7 @@ Collection of system administration and automation scripts for Linux servers.
 - Proxmox hosts: pve-mini2-6 (192.168.30.202-206)
 - LXC containers: Various services on VLAN 30
 - Pi-hole servers: dns1/dns2 (192.168.10.111-112)
-- Synology NAS: nas920/nas719 (192.168.10.100, 192.168.10.102)
+- Synology NAS: nas1/nas719 (192.168.10.100, 192.168.10.102)
 
 **SSH Access:**
 ```bash
