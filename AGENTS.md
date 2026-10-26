@@ -10,7 +10,7 @@ System administration and automation scripts for Linux servers.
 
 ```bash
 cd linux_scripts && ls              # survey the scripts before running anything
-bash <script>.sh --help      # most scripts are self-documenting
+cat <script>.sh               # read the full script before running it; scripts take no arguments
 ```
 
 Read the repo README.md for tool-specific usage. Run scripts only after
